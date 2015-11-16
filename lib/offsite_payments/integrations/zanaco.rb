@@ -1,5 +1,5 @@
-require 'offsite_payments/integrations/zanaco/helper'
-require 'offsite_payments/integrations/zanaco/notification'
+# require 'offsite_payments/integrations/zanaco/helper'
+# require 'offsite_payments/integrations/zanaco/notification'
 
 module OffsitePayments #:nodoc:
   module Integrations #:nodoc:
@@ -8,8 +8,8 @@ module OffsitePayments #:nodoc:
       mattr_accessor :service_url
       self.service_url = 'https://www.example.com'
 
-      def self.notification(post)
-        Notification.new(post)
+      def self.notification(post, options = {})
+        Notification.new(post, options)
       end
 
       class Helper < OffsitePayments::Helper
@@ -40,47 +40,51 @@ module OffsitePayments #:nodoc:
       end
 
       class Notification < OffsitePayments::Notification
-        def complete?
-          params['']
+
+        def initialize(post, options = {})
+          super
+          @secret_key = @options.delete(:credential3)
         end
 
-        def item_id
-          params['']
+        self.production_ips = ['41.72.96.130']
+
+        # def complete?
+        #   true
+        # end
+
+        def amount
+          return Money.new(gross, 'ZMW')
+        end
+
+        def nrc_no
+          params['nrc']
         end
 
         def transaction_id
-          params['']
+          params['tran_id']
         end
 
         # When was this payment received by the client.
         def received_at
-          params['']
+          params['date']
         end
 
-        def payer_email
-          params['']
+        def student_id
+          params['student_id']
         end
 
-        def receiver_email
-          params['']
+        def payee_name
+           params['name']
         end
 
         def security_key
-          params['']
+          params['key']
         end
 
         # the money amount we received in X.2 decimal.
+        # zanco is in development and they do not send amount in fraction
         def gross
-          params['']
-        end
-
-        # Was this a test transaction?
-        def test?
-          params[''] == 'test'
-        end
-
-        def status
-          params['']
+          params['amount']
         end
 
         # Acknowledge the transaction to Zanaco. This method has to be called after a new
@@ -97,26 +101,8 @@ module OffsitePayments #:nodoc:
         #     else
         #       ... log possible hacking attempt ...
         #     end
-        def acknowledge(authcode = nil)
-          payload = raw
-
-          uri = URI.parse(Zanaco.notification_confirmation_url)
-
-          request = Net::HTTP::Post.new(uri.path)
-
-          request['Content-Length'] = "#{payload.size}"
-          request['User-Agent'] = "Active Merchant -- http://activemerchant.org/"
-          request['Content-Type'] = "application/x-www-form-urlencoded"
-
-          http = Net::HTTP.new(uri.host, uri.port)
-          http.verify_mode    = OpenSSL::SSL::VERIFY_NONE unless @ssl_strict
-          http.use_ssl        = true
-
-          response = http.request(request, payload)
-
-          # Replace with the appropriate codes
-          raise StandardError.new("Faulty Zanaco result: #{response.body}") unless ["AUTHORISED", "DECLINED"].include?(response.body)
-          response.body == "AUTHORISED"
+        def acknowledge
+          secure_compare(security_key, @secret_key)
         end
 
         private
@@ -128,6 +114,14 @@ module OffsitePayments #:nodoc:
             key, value = *line.scan( %r{^([A-Za-z0-9_.-]+)\=(.*)$} ).flatten
             params[key] = CGI.unescape(value.to_s) if key.present?
           end
+        end
+
+        def secure_compare(a, b)
+          return false unless a.bytesize == b.bytesize
+          l = a.unpack("C#{a.bytesize}")
+          res = 0
+          b.each_byte { |byte| res |= byte ^ l.shift }
+          res == 0
         end
       end
     end
