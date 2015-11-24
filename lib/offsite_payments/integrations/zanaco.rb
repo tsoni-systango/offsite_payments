@@ -52,7 +52,11 @@ module OffsitePayments #:nodoc:
         # end
 
         def amount
-          return Money.new(gross, 'ZMW')
+          gross
+        end
+
+        def currency
+          'ZMW'          
         end
 
         def nrc_no
@@ -76,7 +80,7 @@ module OffsitePayments #:nodoc:
            params['name']
         end
 
-        def security_key
+        def recived_security_key
           params['key']
         end
 
@@ -101,7 +105,7 @@ module OffsitePayments #:nodoc:
         #       ... log possible hacking attempt ...
         #     end
         def acknowledge
-          secure_compare(security_key, @secret_key)
+          secure_compare(recived_security_key, @secret_key)
         end
 
         private
