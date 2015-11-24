@@ -127,6 +127,17 @@ module OffsitePayments #:nodoc:
           res == 0
         end
       end
+
+      class XmlResponse
+        attr_accessor :status, :message, :transaction_id
+        def initialize(*args)
+          opts = args.extract_options!
+          @status = opts[:status]
+          @message = opts[:message]
+          @transaction_id = opts[:transaction_id]
+        end
+      end
+      
     end
   end
 end
