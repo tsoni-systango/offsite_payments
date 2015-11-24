@@ -17,10 +17,10 @@ module OffsitePayments #:nodoc:
         private
 
         def sign data, secret_key
-          mac = Digest::HMAC.new secret_key, Digest::SHA256
-          mac.update data
-          Base64.encode64(mac.digest).gsub "\n", ''
-          # Base64.encode64(OpenSSL::HMAC.digest('sha256', secret_key, data)).gsub "\n", ''
+          # mac = Digest::HMAC.new secret_key, Digest::SHA256
+          # mac.update data
+          # Base64.encode64(mac.digest).gsub "\n", ''
+          Base64.encode64(OpenSSL::HMAC.digest('sha256', secret_key, data)).gsub "\n", ''
         end
 
         def build_data_to_sign params
