@@ -44,9 +44,8 @@ module OffsitePayments #:nodoc:
         def initialize(post, options = {})
           super
           @secret_key = @options.delete(:credential3)
+          self.production_ips = @options.delete(:whitlisted_ips)
         end
-
-        self.production_ips = ['41.72.96.130']
 
         # def complete?
         #   true
